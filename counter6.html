@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TapCount - Simple Blackjack Card Counting App</title>
+    <meta name="description" content="TapCount is a free, easy-to-use blackjack card counting app that works on any device. Count cards discreetly with simple taps - no download required.">
+    <meta name="keywords" content="blackjack card counting, card counting app, blackjack strategy, hi-lo counting system, mobile card counter">
+    
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="TapCount - Mobile Blackjack Card Counting Made Simple">
+    <meta property="og:description" content="Count cards at the blackjack table discreetly with this easy tap-based counter. Works on any mobile device with no installation required.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tapcount.net">
+    
+    <!-- Additional SEO Meta Tags -->
+    <meta name="author" content="TapCount">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://tapcount.net">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* SEO Content Styles */
+        header, footer, .seo-content {
+            padding: 20px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            padding-top: 30px;
+            padding-bottom: 10px;
+        }
+        
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #2C3E50;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            color: #7F8C8D;
+        }
+        
+        .seo-content {
+            text-align: left;
+            padding-top: 40px;
+        }
+        
+        .seo-content h2 {
+            font-size: 1.8rem;
+            margin: 25px 0 15px;
+            color: #2C3E50;
+        }
+        
+        .seo-content h3 {
+            font-size: 1.4rem;
+            margin: 20px 0 10px;
+            color: #34495E;
+        }
+        
+        .seo-content ul, .seo-content ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .seo-content li {
+            margin-bottom: 8px;
+        }
+        
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            color: #7F8C8D;
+            font-size: 0.9rem;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        .start-button {
+            display: inline-block;
+            background-color: #3498DB;
+            color: white;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .start-button:hover {
+            background-color: #2980B9;
+        }
+        
+        /* Card Counter App Styles */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overscroll-behavior: none;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+        
+        .section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            position: relative;
+            touch-action: manipulation;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .section:active {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .left {
+            background-color: #f5f5f5;
+            border-right: 1px solid #ccc;
+        }
+        
+        .right {
+            background-color: #e9e9e9;
+        }
+        
+        .counter-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: #333;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .section-label {
+            position: absolute;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            top: 20px;
+        }
+        
+        .left .section-label {
+            left: 40px;
+        }
+        
+        .right .section-label {
+            right: 40px;
+        }
+        
+        .top .section-label {
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .bottom .section-label {
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .reset-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+        
+        .orientation-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+        
+        .help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(51, 51, 51, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .help-button:hover {
+            opacity: 1;
+        }
+        
+        .tooltip {
+            position: absolute;
+            top: 65px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            width: 280px;
+            z-index: 30;
+            display: none;
+            line-height: 1.4;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .reset-button:active, .orientation-button:active {
+            transform: scale(0.95);
+        }
+
+        .feedback {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .left .feedback {
+            color: red;
+        }
+
+        .right .feedback {
+            color: green;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #222;
+                color: #f5f5f5;
+            }
+            
+            .left {
+                background-color: #333;
+                border-right: 1px solid #444;
+            }
+            
+            .right {
+                background-color: #2a2a2a;
+            }
+            
+            .top {
+                background-color: #333;
+                border-bottom: 1px solid #444;
+            }
+            
+            .bottom {
+                background-color: #2a2a2a;
+            }
+            
+            .counter-display {
+                color: #f5f5f5;
+                background-color: rgba(50, 50, 50, 0.8);
+            }
+            
+            .reset-button, .orientation-button, .help-button {
+                background-color: #555;
+            }
+            
+            .tooltip {
+                background-color: rgba(50, 50, 50, 0.9);
+            }
+            
+            header h1, .seo-content h2, .seo-content h3 {
+                color: #ECF0F1;
+            }
+            
+            header p, footer {
+                color: #BDC3C7;
+            }
+            
+            footer {
+                border-top: 1px solid #34495E;
+            }
+            
+            .start-button {
+                background-color: #2980B9;
+            }
+            
+            .start-button:hover {
+                background-color: #3498DB;
+            }
+        }
+
+        button:focus {
+            outline: 3px solid #4A90E2;
+        }
+        
+        /* Toggle between SEO content and App */
+        .app-mode .seo-content, 
+        .app-mode header, 
+        .app-mode footer {
+            display: none;
+        }
+        
+        .app-mode .app-container {
+            display: flex;
+        }
+        
+        .seo-mode .app-container {
+            display: none;
+        }
+        
+        /* Start in SEO mode by default */
+        .app-container {
+            display: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            header p {
+                font-size: 1rem;
+            }
+            
+            .seo-content h2 {
+                font-size: 1.6rem;
+            }
+            
+            .seo-content h3 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body class="seo-mode">
+    <!-- SEO Content -->
+    <header>
+        <h1>TapCount - Blackjack Card Counter</h1>
+        <p>The simplest way to count cards at the blackjack table</p>
+    </header>
+    
+    <div class="seo-content">
+        <section class="app-description">
+            <a href="#" id="start-app" class="start-button">Start Card Counting</a>
+            
+            <h2>About TapCount</h2>
+            <p>TapCount is a lightweight, browser-based card counting tool designed specifically for blackjack players looking for an edge. With its minimalist interface and responsive design, TapCount works on any mobile device without downloads or installations.</p>
+            
+            <h3>Features:</h3>
+            <ul>
+                <li>Uses the proven Hi-Lo counting system</li>
+                <li>Works in horizontal or vertical orientation</li>
+                <li>Completely free to use</li>
+                <li>No app installation required</li>
+                <li>Works offline once loaded</li>
+                <li>Discreet design for casino use</li>
+                <li>Simple tap interface</li>
+            </ul>
+        </section>
+        
+        <section class="how-to-use">
+            <h2>How To Use TapCount</h2>
+            <p>Using TapCount is simple:</p>
+            <ol>
+                <li>When you see a high card (10, J, Q, K, A): Tap the left side</li>
+                <li>When you see a low card (2, 3, 4, 5, 6): Tap the right side</li>
+                <li>Middle cards (7, 8, 9): Don't tap anything</li>
+                <li>Reset counter between shuffles using the reset button</li>
+                <li>Switch between horizontal and vertical layouts using the orientation button</li>
+            </ol>
+            <p>The counter display in the center shows your current count. A positive count means the deck is rich in high cards, giving you an advantage.</p>
+        </section>
+    </div>
+    
+    <footer>
+        <p>TapCount is for educational purposes only. Please check local regulations regarding card counting in casinos.</p>
+        <p>&copy; 2025 TapCount. All rights reserved.</p>
+    </footer>
+    
+    <!-- App Container -->
+    <div class="app-container">
+        <div class="container">
+            <div class="section left" id="decrement">
+                <div class="section-label">10, J, Q, K, A</div>
+                <div class="feedback" id="minus-feedback">-1</div>
+            </div>
+            <div class="counter-display" id="counter">0</div>
+            <div class="section right" id="increment">
+                <div class="section-label">2, 3, 4, 5, 6</div>
+                <div class="feedback" id="plus-feedback">+1</div>
+            </div>
+        </div>
+        <button class="reset-button" id="reset" aria-label="Reset counter">↺</button>
+        <button class="orientation-button" id="orientation-toggle" aria-label="Toggle orientation">⇅</button>
+        <button class="help-button" id="help-button" aria-label="Help">?</button>
+        <div class="tooltip" id="tooltip">
+            <strong>Quick Guide:</strong><br>
+            • Tap left side for high cards (10,J,Q,K,A): -1<br>
+            • Tap right side for low cards (2-6): +1<br>
+            • Middle cards (7,8,9): Don't tap (0)<br>
+            • Use ↺ button to reset count<br>
+            • Use ⇅/⇄ button to switch orientation<br><br>
+            <div style="font-size: 0.8em; opacity: 0.8;">
+              Positive count = More high cards remain (player advantage)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle between SEO and App modes
+            const startAppButton = document.getElementById('start-app');
+            startAppButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.body.classList.remove('seo-mode');
+                document.body.classList.add('app-mode');
+            });
+            
+            // Card Counter App Script
+            let count = 0;
+            let vibrationEnabled = true;
+            let isHorizontal = true; // true for horizontal (west-east), false for vertical (north-south)
+            const counterDisplay = document.getElementById('counter');
+            const incrementSection = document.getElementById('increment');
+            const decrementSection = document.getElementById('decrement');
+            const resetButton = document.getElementById('reset');
+            const orientationButton = document.getElementById('orientation-toggle');
+            const plusFeedback = document.getElementById('plus-feedback');
+            const minusFeedback = document.getElementById('minus-feedback');
+            const container = document.querySelector('.container');
+            
+            // Initialize orientation
+            setHorizontalOrientation();
+            
+            function updateCounter() {
+                counterDisplay.textContent = count;
+                
+                if (count > 0) {
+                    counterDisplay.style.color = '#4CAF50';
+                } else if (count < 0) {
+                    counterDisplay.style.color = '#F44336';
+                } else {
+                    counterDisplay.style.color = '';
+                }
+                
+                const announcement = document.createElement('div');
+                announcement.setAttribute('aria-live', 'assertive');
+                announcement.setAttribute('class', 'visually-hidden');
+                announcement.textContent = 'Count is now ' + count;
+                document.body.appendChild(announcement);
+                
+                setTimeout(function() {
+                    document.body.removeChild(announcement);
+                }, 1000);
+            }
+            
+            function increment(e) {
+                e.preventDefault();
+                count++;
+                updateCounter();
+                
+                plusFeedback.style.opacity = '1';
+                setTimeout(() => {
+                    plusFeedback.style.opacity = '0';
+                }, 200);
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate(50);
+                }
+            }
+            
+            function decrement(e) {
+                e.preventDefault();
+                count--;
+                updateCounter();
+                
+                minusFeedback.style.opacity = '1';
+                setTimeout(() => {
+                    minusFeedback.style.opacity = '0';
+                }, 200);
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([25, 25, 25]);
+                }
+            }
+            
+            function reset() {
+                count = 0;
+                updateCounter();
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([50, 50, 100]);
+                }
+                
+                counterDisplay.style.transition = 'transform 0.3s';
+                counterDisplay.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    counterDisplay.style.transform = 'scale(1)';
+                }, 300);
+            }
+            
+            function toggleOrientation() {
+                isHorizontal = !isHorizontal;
+                
+                if (isHorizontal) {
+                    setHorizontalOrientation();
+                    orientationButton.innerHTML = '⇅'; // vertical arrows (suggesting to switch to vertical)
+                } else {
+                    setVerticalOrientation();
+                    orientationButton.innerHTML = '⇄'; // horizontal arrows (suggesting to switch to horizontal)
+                }
+                
+                // Provide haptic feedback
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([40, 30, 40]);
+                }
+            }
+            
+            function setHorizontalOrientation() {
+                // Reset classes
+                container.style.flexDirection = 'row';
+                
+                // Update sections
+                incrementSection.className = 'section right';
+                decrementSection.className = 'section left';
+                
+                // Clear any inline styles that might have been set
+                incrementSection.style.borderTop = '';
+                incrementSection.style.borderBottom = '';
+                decrementSection.style.borderTop = '';
+                decrementSection.style.borderBottom = '';
+                decrementSection.style.borderRight = '';
+                
+                // Set appropriate borders
+                decrementSection.style.borderRight = '1px solid #ccc';
+                
+                // Update aria labels
+                incrementSection.setAttribute('aria-label', 'Tap for low cards to increment count');
+                decrementSection.setAttribute('aria-label', 'Tap for high cards to decrement count');
+                
+                // Remove existing event listeners
+                incrementSection.removeEventListener('click', increment);
+                incrementSection.removeEventListener('touchstart', increment, {passive: false});
+                decrementSection.removeEventListener('click', decrement);
+                decrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                incrementSection.removeEventListener('click', decrement);
+                incrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                decrementSection.removeEventListener('click', increment);
+                decrementSection.removeEventListener('touchstart', increment, {passive: false});
+                
+                // Add proper event listeners for horizontal orientation
+                incrementSection.addEventListener('click', increment);
+                incrementSection.addEventListener('touchstart', increment, {passive: false});
+                decrementSection.addEventListener('click', decrement);
+                decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            }
+            
+            function setVerticalOrientation() {
+                // Reset classes
+                container.style.flexDirection = 'column';
+                
+                // Update sections
+                incrementSection.className = 'section top';
+                decrementSection.className = 'section bottom';
+                
+                // Clear any inline styles that might have been set
+                incrementSection.style.borderLeft = '';
+                incrementSection.style.borderRight = '';
+                decrementSection.style.borderLeft = '';
+                decrementSection.style.borderRight = '';
+                
+                // Set appropriate borders
+                incrementSection.style.borderBottom = '1px solid #ccc';
+                
+                // Update aria labels
+                incrementSection.setAttribute('aria-label', 'Tap for low cards to increment count');
+                decrementSection.setAttribute('aria-label', 'Tap for high cards to decrement count');
+                
+                // Remove existing event listeners
+                incrementSection.removeEventListener('click', increment);
+                incrementSection.removeEventListener('touchstart', increment, {passive: false});
+                decrementSection.removeEventListener('click', decrement);
+                decrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                incrementSection.removeEventListener('click', decrement);
+                incrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                decrementSection.removeEventListener('click', increment);
+                decrementSection.removeEventListener('touchstart', increment, {passive: false});
+                
+                // Add proper event listeners for vertical orientation
+                // For vertical, we want the TOP to increment and BOTTOM to decrement
+                incrementSection.addEventListener('click', increment);
+                incrementSection.addEventListener('touchstart', increment, {passive: false});
+                decrementSection.addEventListener('click', decrement);
+                decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            }
+            
+            // Event listeners
+            incrementSection.addEventListener('click', increment);
+            incrementSection.addEventListener('touchstart', increment, {passive: false});
+            decrementSection.addEventListener('click', decrement);
+            decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            resetButton.addEventListener('click', reset);
+            orientationButton.addEventListener('click', toggleOrientation);
+            
+            // Help tooltip functionality
+            const helpButton = document.getElementById('help-button');
+            const tooltip = document.getElementById('tooltip');
+            let tooltipVisible = false;
+            
+            helpButton.addEventListener('click', function() {
+                tooltipVisible = !tooltipVisible;
+                tooltip.style.display = tooltipVisible ? 'block' : 'none';
+            });
+            
+            // Close tooltip when tapping anywhere else
+            document.addEventListener('click', function(e) {
+                if (tooltipVisible && e.target !== helpButton && !tooltip.contains(e.target)) {
+                    tooltipVisible = false;
+                    tooltip.style.display = 'none';
+                }
+            });
+            
+            // Keyboard access
+            document.addEventListener('keydown', function(e) {
+                if (isHorizontal) {
+                    // Horizontal orientation controls
+                    if (e.key === 'ArrowRight' || e.key === '+') {
+                        increment(e);
+                    } else if (e.key === 'ArrowLeft' || e.key === '-') {
+                        decrement(e);
+                    }
+                } else {
+                    // Vertical orientation controls
+                    if (e.key === 'ArrowUp' || e.key === '+') {
+                        increment(e);
+                    } else if (e.key === 'ArrowDown' || e.key === '-') {
+                        decrement(e);
+                    }
+                }
+                
+                if (e.key === 'r' || e.key === 'R' || e.key === '0') {
+                    reset();
+                } else if (e.key === 'o' || e.key === 'O') {
+                    toggleOrientation();
+                }
+            });
+            
+            // Prevent zooming on double tap
+            document.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                const DOUBLE_TAP_THRESHOLD = 300;
+                if (now - lastTap < DOUBLE_TAP_THRESHOLD) {
+                    e.preventDefault();
+                }
+                lastTap = now;
+            }, false);
+            
+            let lastTap = 0;
+            
+            // Add Back to Info button
+            const backButton = document.createElement('button');
+            backButton.textContent = 'ℹ️';
+            backButton.setAttribute('aria-label', 'Back to information');
+            backButton.style.position = 'fixed';
+            backButton.style.top = '20px';
+            backButton.style.left = '20px';
+            backButton.style.backgroundColor = 'rgba(51, 51, 51, 0.7)';
+            backButton.style.color = 'white';
+            backButton.style.border = 'none';
+            backButton.style.borderRadius = '50%';
+            backButton.style.width = '36px';
+            backButton.style.height = '36px';
+            backButton.style.fontSize = '1rem';
+            backButton.style.cursor = 'pointer';
+            backButton.style.display = 'flex';
+            backButton.style.justifyContent = 'center';
+            backButton.style.alignItems = 'center';
+            backButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+            backButton.style.zIndex = '20';
+            backButton.style.opacity = '0.7';
+            
+            backButton.addEventListener('click', function() {
+                document.body.classList.remove('app-mode');
+                document.body.classList.add('seo-mode');
+            });
+            
+            document.querySelector('.app-container').appendChild(backButton);
+        });
+    </script>
+</body>
+</html>
