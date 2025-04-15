@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blackjack Card Counter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overscroll-behavior: none;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+        
+        .section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            position: relative;
+            touch-action: manipulation;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .section:active {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .left {
+            background-color: #f5f5f5;
+            border-right: 1px solid #ccc;
+        }
+        
+        .right {
+            background-color: #e9e9e9;
+        }
+        
+        .counter-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: #333;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .section-label {
+            position: absolute;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            top: 20px;
+        }
+        
+        .left .section-label {
+            left: 40px;
+        }
+        
+        .right .section-label {
+            right: 40px;
+        }
+        
+        .top .section-label {
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .bottom .section-label {
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .reset-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+        
+        .orientation-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+        }
+        
+        .reset-button:active, .orientation-button:active {
+            transform: scale(0.95);
+        }
+
+        .feedback {
+            position: absolute;
+            font-size: 2.5rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .left .feedback {
+            color: red;
+        }
+
+        .right .feedback {
+            color: green;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #222;
+                color: #f5f5f5;
+            }
+            
+            .left {
+                background-color: #333;
+                border-right: 1px solid #444;
+            }
+            
+            .right {
+                background-color: #2a2a2a;
+            }
+            
+            .top {
+                background-color: #333;
+                border-bottom: 1px solid #444;
+            }
+            
+            .bottom {
+                background-color: #2a2a2a;
+            }
+            
+            .counter-display {
+                color: #f5f5f5;
+                background-color: rgba(50, 50, 50, 0.8);
+            }
+            
+            .reset-button, .orientation-button {
+                background-color: #555;
+            }
+        }
+
+        button:focus {
+            outline: 3px solid #4A90E2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section left" id="decrement">
+            <div class="section-label">10, J, Q, K, A</div>
+            <div class="feedback" id="minus-feedback">-1</div>
+        </div>
+        <div class="counter-display" id="counter">0</div>
+        <div class="section right" id="increment">
+            <div class="section-label">2, 3, 4, 5, 6</div>
+            <div class="feedback" id="plus-feedback">+1</div>
+        </div>
+    </div>
+    <button class="reset-button" id="reset" aria-label="Reset counter">↺</button>
+    <button class="orientation-button" id="orientation-toggle" aria-label="Toggle orientation">⇅</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let count = 0;
+            let vibrationEnabled = true;
+            let isHorizontal = true; // true for horizontal (west-east), false for vertical (north-south)
+            const counterDisplay = document.getElementById('counter');
+            const incrementSection = document.getElementById('increment');
+            const decrementSection = document.getElementById('decrement');
+            const resetButton = document.getElementById('reset');
+            const orientationButton = document.getElementById('orientation-toggle');
+            const plusFeedback = document.getElementById('plus-feedback');
+            const minusFeedback = document.getElementById('minus-feedback');
+            const container = document.querySelector('.container');
+            
+            // Initialize orientation
+            setHorizontalOrientation();
+            
+            function updateCounter() {
+                counterDisplay.textContent = count;
+                
+                if (count > 0) {
+                    counterDisplay.style.color = '#4CAF50';
+                } else if (count < 0) {
+                    counterDisplay.style.color = '#F44336';
+                } else {
+                    counterDisplay.style.color = '';
+                }
+                
+                const announcement = document.createElement('div');
+                announcement.setAttribute('aria-live', 'assertive');
+                announcement.setAttribute('class', 'visually-hidden');
+                announcement.textContent = 'Count is now ' + count;
+                document.body.appendChild(announcement);
+                
+                setTimeout(function() {
+                    document.body.removeChild(announcement);
+                }, 1000);
+            }
+            
+            function increment(e) {
+                e.preventDefault();
+                count++;
+                updateCounter();
+                
+                plusFeedback.style.opacity = '1';
+                setTimeout(() => {
+                    plusFeedback.style.opacity = '0';
+                }, 200);
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate(50);
+                }
+            }
+            
+            function decrement(e) {
+                e.preventDefault();
+                count--;
+                updateCounter();
+                
+                minusFeedback.style.opacity = '1';
+                setTimeout(() => {
+                    minusFeedback.style.opacity = '0';
+                }, 200);
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([25, 25, 25]);
+                }
+            }
+            
+            function reset() {
+                count = 0;
+                updateCounter();
+                
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([50, 50, 100]);
+                }
+                
+                counterDisplay.style.transition = 'transform 0.3s';
+                counterDisplay.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    counterDisplay.style.transform = 'scale(1)';
+                }, 300);
+            }
+            
+            function toggleOrientation() {
+                isHorizontal = !isHorizontal;
+                
+                if (isHorizontal) {
+                    setHorizontalOrientation();
+                    orientationButton.innerHTML = '⇅'; // vertical arrows (suggesting to switch to vertical)
+                } else {
+                    setVerticalOrientation();
+                    orientationButton.innerHTML = '⇄'; // horizontal arrows (suggesting to switch to horizontal)
+                }
+                
+                // Provide haptic feedback
+                if (vibrationEnabled && 'vibrate' in navigator) {
+                    navigator.vibrate([40, 30, 40]);
+                }
+            }
+            
+            function setHorizontalOrientation() {
+                // Reset classes
+                container.style.flexDirection = 'row';
+                
+                // Update sections
+                incrementSection.className = 'section right';
+                decrementSection.className = 'section left';
+                
+                // Clear any inline styles that might have been set
+                incrementSection.style.borderTop = '';
+                incrementSection.style.borderBottom = '';
+                decrementSection.style.borderTop = '';
+                decrementSection.style.borderBottom = '';
+                decrementSection.style.borderRight = '';
+                
+                // Set appropriate borders
+                decrementSection.style.borderRight = '1px solid #ccc';
+                
+                // Update aria labels
+                incrementSection.setAttribute('aria-label', 'Tap for low cards to increment count');
+                decrementSection.setAttribute('aria-label', 'Tap for high cards to decrement count');
+                
+                // Remove existing event listeners
+                incrementSection.removeEventListener('click', increment);
+                incrementSection.removeEventListener('touchstart', increment, {passive: false});
+                decrementSection.removeEventListener('click', decrement);
+                decrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                incrementSection.removeEventListener('click', decrement);
+                incrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                decrementSection.removeEventListener('click', increment);
+                decrementSection.removeEventListener('touchstart', increment, {passive: false});
+                
+                // Add proper event listeners for horizontal orientation
+                incrementSection.addEventListener('click', increment);
+                incrementSection.addEventListener('touchstart', increment, {passive: false});
+                decrementSection.addEventListener('click', decrement);
+                decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            }
+            
+            function setVerticalOrientation() {
+                // Reset classes
+                container.style.flexDirection = 'column';
+                
+                // Update sections
+                incrementSection.className = 'section top';
+                decrementSection.className = 'section bottom';
+                
+                // Clear any inline styles that might have been set
+                incrementSection.style.borderLeft = '';
+                incrementSection.style.borderRight = '';
+                decrementSection.style.borderLeft = '';
+                decrementSection.style.borderRight = '';
+                
+                // Set appropriate borders
+                incrementSection.style.borderBottom = '1px solid #ccc';
+                
+                // Update aria labels
+                incrementSection.setAttribute('aria-label', 'Tap for low cards to increment count');
+                decrementSection.setAttribute('aria-label', 'Tap for high cards to decrement count');
+                
+                // Remove existing event listeners
+                incrementSection.removeEventListener('click', increment);
+                incrementSection.removeEventListener('touchstart', increment, {passive: false});
+                decrementSection.removeEventListener('click', decrement);
+                decrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                incrementSection.removeEventListener('click', decrement);
+                incrementSection.removeEventListener('touchstart', decrement, {passive: false});
+                decrementSection.removeEventListener('click', increment);
+                decrementSection.removeEventListener('touchstart', increment, {passive: false});
+                
+                // Add proper event listeners for vertical orientation
+                // IMPORTANT: For vertical, we want the TOP to increment and BOTTOM to decrement
+                incrementSection.addEventListener('click', increment);
+                incrementSection.addEventListener('touchstart', increment, {passive: false});
+                decrementSection.addEventListener('click', decrement);
+                decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            }
+            
+            // Event listeners
+            incrementSection.addEventListener('click', increment);
+            incrementSection.addEventListener('touchstart', increment, {passive: false});
+            decrementSection.addEventListener('click', decrement);
+            decrementSection.addEventListener('touchstart', decrement, {passive: false});
+            resetButton.addEventListener('click', reset);
+            orientationButton.addEventListener('click', toggleOrientation);
+            
+            // Keyboard access
+            document.addEventListener('keydown', function(e) {
+                if (isHorizontal) {
+                    // Horizontal orientation controls
+                    if (e.key === 'ArrowRight' || e.key === '+') {
+                        increment(e);
+                    } else if (e.key === 'ArrowLeft' || e.key === '-') {
+                        decrement(e);
+                    }
+                } else {
+                    // Vertical orientation controls - REVERSED from previous behavior
+                    if (e.key === 'ArrowUp' || e.key === '+') {
+                        increment(e);
+                    } else if (e.key === 'ArrowDown' || e.key === '-') {
+                        decrement(e);
+                    }
+                }
+                
+                if (e.key === 'r' || e.key === 'R' || e.key === '0') {
+                    reset();
+                } else if (e.key === 'o' || e.key === 'O') {
+                    toggleOrientation();
+                }
+            });
+            
+            // Initialize
+            updateCounter();
+            
+            // Prevent zooming on double tap
+            document.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                const DOUBLE_TAP_THRESHOLD = 300;
+                if (now - lastTap < DOUBLE_TAP_THRESHOLD) {
+                    e.preventDefault();
+                }
+                lastTap = now;
+            }, false);
+            
+            let lastTap = 0;
+        });
+    </script>
+</body>
+</html>
