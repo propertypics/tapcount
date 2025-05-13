@@ -10,7 +10,121 @@
 
   gtag('config', 'G-QB3WT598Z3');
 </script>
-
+// Add this right after your existing Google Analytics code in the <head>
+<script>
+  // Enhanced Analytics for TapCount
+  document.addEventListener('DOMContentLoaded', function() {
+    // Track session start
+    gtag('event', 'session_start', {
+      'event_category': 'Engagement',
+      'event_label': 'Card Counting Session'
+    });
+    
+    // Initialize session tracking variables
+    let sessionStartTime = new Date();
+    let lastActivityTime = new Date();
+    let incrementCount = 0;
+    let decrementCount = 0;
+    let resetCount = 0;
+    let orientationChanges = 0;
+    
+    // Track when user leaves the page
+    window.addEventListener('beforeunload', function() {
+      // Calculate session duration
+      let sessionDuration = (new Date() - sessionStartTime) / 1000; // in seconds
+      
+      // Send final session data
+      gtag('event', 'session_end', {
+        'event_category': 'Engagement',
+        'event_label': 'Card Counting Session',
+        'value': Math.round(sessionDuration),
+        'session_duration_seconds': Math.round(sessionDuration),
+        'increment_clicks': incrementCount,
+        'decrement_clicks': decrementCount,
+        'reset_count': resetCount,
+        'orientation_changes': orientationChanges
+      });
+    });
+    
+    // Set up custom interaction tracking
+    function trackInteraction(action, label, value = null) {
+      lastActivityTime = new Date();
+      
+      // Send event to Google Analytics
+      gtag('event', action, {
+        'event_category': 'Card Counter',
+        'event_label': label,
+        'value': value
+      });
+    }
+    
+    // Track inactivity
+    const INACTIVE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+    setInterval(function() {
+      if (new Date() - lastActivityTime > INACTIVE_THRESHOLD) {
+        gtag('event', 'user_inactive', {
+          'event_category': 'Engagement',
+          'event_label': 'Inactive Period',
+          'value': Math.round((new Date() - lastActivityTime) / 1000)
+        });
+      }
+    }, 60 * 1000); // Check every minute
+    
+    // Add event listeners to your existing elements
+    // Track low card taps
+    document.getElementById('increment').addEventListener('click', function() {
+      incrementCount++;
+      trackInteraction('card_tap', 'Low Card (+1)');
+    });
+    
+    // Track high card taps
+    document.getElementById('decrement').addEventListener('click', function() {
+      decrementCount++;
+      trackInteraction('card_tap', 'High Card (-1)');
+    });
+    
+    // Track counter resets
+    document.getElementById('reset').addEventListener('click', function() {
+      resetCount++;
+      trackInteraction('counter_reset', 'Count Reset');
+    });
+    
+    // Track orientation changes
+    document.getElementById('orientation-toggle').addEventListener('click', function() {
+      orientationChanges++;
+      const orientation = document.querySelector('.container').style.flexDirection === 'row' ? 'Vertical' : 'Horizontal';
+      trackInteraction('orientation_change', orientation);
+    });
+    
+    // Track help tooltip opens
+    document.getElementById('help-button').addEventListener('click', function() {
+      trackInteraction('help_open', 'Help Tooltip');
+    });
+    
+    // Track keyboard interactions
+    document.addEventListener('keydown', function(e) {
+      if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', '+', '-', 'r', 'R', '0', 'o', 'O'].includes(e.key)) {
+        let action = '';
+        
+        if (['ArrowRight', 'ArrowUp', '+'].includes(e.key)) {
+          action = 'card_tap_keyboard';
+          incrementCount++;
+        } else if (['ArrowLeft', 'ArrowDown', '-'].includes(e.key)) {
+          action = 'card_tap_keyboard';
+          decrementCount++;
+        } else if (['r', 'R', '0'].includes(e.key)) {
+          action = 'counter_reset_keyboard';
+          resetCount++;
+        } else if (['o', 'O'].includes(e.key)) {
+          action = 'orientation_change_keyboard';
+          orientationChanges++;
+        }
+        
+        trackInteraction(action, e.key);
+      }
+    });
+  });
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TapCount - Simple Blackjack Card Counting App</title>
